@@ -57,6 +57,37 @@
 
     function processText(raw) {
       const words = raw.split(/\s+/);
->
+      const html = words.map(word => {
+        return `<span class="word">${word}</span>`;
+      }).join(" ");
+      document.getElementById("display").innerHTML = html;
+
+      document.querySelectorAll(".word").forEach(el => {
+        el.addEventListener("click", async (e) => {
+          const word = e.target.innerText.replace(/[.,!?]/g, "");
+          const translated = await translate(word);
+          const common = isCommonWord(word) ? "✅ Часто употребляется" : "❌ Редкое";
+          showPopup(`<strong>${word}</strong><br>${translated}<br>${common}`, e.pageX + 10, e.pageY);
+        });
+      });
+    }
+
+    document.getElementById("fileInput").addEventListener("change", function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          processText(e.target.result);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.classList.contains("word")) {
+        popup.style.display = "none";
+      }
+    });
+  </script>
 </body>
 </html>
