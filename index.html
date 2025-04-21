@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>English Reader</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+    body { font-family: sans-serif; padding: 20px; }
     .word { cursor: pointer; color: blue; }
     #popup {
       position: absolute;
@@ -13,14 +13,30 @@
       padding: 10px;
       display: none;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+    }
+    #display {
+      margin-top: 20px;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
-  <h1>English Reader</h1>
-  <p id="text">
-    The quick brown fox jumps over the lazy dog.
-  </p>
+  <h1>📚 English Reader</h1>
+
+  <p>Вставь текст книги или загрузи файл:</p>
+
+  <input type="file" id="fileInput" />
+  <br><br>
+  <textarea id="textInput" placeholder="Или вставь текст сюда..."></textarea>
+  <br><br>
+  <button onclick="processText()">Показать</button>
+
+  <div id="display"></div>
   <div id="popup"></div>
 
   <script>
@@ -32,9 +48,13 @@
     }
 
     async function translate(word) {
-      const res = await fetch(`/api/translateLibre?word=${word}`);
-      const data = await res.json();
-      return data.translated || "No translation";
+      try {
+        const res = await fetch(`/api/translateLibre?word=${word}`);
+        const data = await res.json();
+        return data.translated || "No translation";
+      } catch {
+        return "Translation error";
+      }
     }
 
     function showPopup(text, x, y) {
@@ -44,18 +64,34 @@
       popup.style.display = "block";
     }
 
-    document.getElementById("text").innerHTML = document.getElementById("text").innerText
-      .split(" ")
-      .map(word => `<span class="word">${word}</span>`)
-      .join(" ");
+    function processText() {
+      const raw = document.getElementById("textInput").value;
+      const words = raw.split(/\s+/);
+      const html = words.map(word => {
+        const clean = word.replace(/[.,!?]/g, "");
+        return `<span class="word">${word}</span>`;
+      }).join(" ");
+      document.getElementById("display").innerHTML = html;
 
-    document.querySelectorAll(".word").forEach(el => {
-      el.addEventListener("click", async (e) => {
-        const word = e.target.innerText.replace(/[.,!?]/g, "");
-        const translated = await translate(word);
-        const common = isCommonWord(word) ? "✅ Common word" : "❌ Not common";
-        showPopup(`<strong>${word}</strong><br>${translated}<br>${common}`, e.pageX + 10, e.pageY);
+      document.querySelectorAll(".word").forEach(el => {
+        el.addEventListener("click", async (e) => {
+          const word = e.target.innerText.replace(/[.,!?]/g, "");
+          const translated = await translate(word);
+          const common = isCommonWord(word) ? "✅ Часто употребляется" : "❌ Редкое";
+          showPopup(`<strong>${word}</strong><br>${translated}<br>${common}`, e.pageX + 10, e.pageY);
+        });
       });
+    }
+
+    document.getElementById("fileInput").addEventListener("change", function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("textInput").value = e.target.result;
+        };
+        reader.readAsText(file);
+      }
     });
 
     document.addEventListener("click", (e) => {
@@ -63,6 +99,10 @@
         popup.style.display = "none";
       }
     });
+  </script>
+</body>
+</html>
+
   </script>
 </body>
 </html>
