@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>English Reader</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+    .word { cursor: pointer; color: blue; }
+    #popup {
+      position: absolute;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      display: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>English Reader</h1>
+  <p id="text">
+    The quick brown fox jumps over the lazy dog.
+  </p>
+  <div id="popup"></div>
+
+  <script>
+    const popup = document.getElementById("popup");
+
+    function isCommonWord(word) {
+      const commonWords = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "I"];
+      return commonWords.includes(word.toLowerCase());
+    }
+
+    async function translate(word) {
+      const res = await fetch(`/api/translateLibre?word=${word}`);
+      const data = await res.json();
+      return data.translated || "No translation";
+    }
+
+    function showPopup(text, x, y) {
+      popup.style.left = x + "px";
+      popup.style.top = y + "px";
+      popup.innerHTML = text;
+      popup.style.display = "block";
+    }
+
+    document.getElementById("text").innerHTML = document.getElementById("text").innerText
+      .split(" ")
+      .map(word => `<span class="word">${word}</span>`)
+      .join(" ");
+
+    document.querySelectorAll(".word").forEach(el => {
+      el.addEventListener("click", async (e) => {
+        const word = e.target.innerText.replace(/[.,!?]/g, "");
+        const translated = await translate(word);
+        const common = isCommonWord(word) ? "✅ Common word" : "❌ Not common";
+        showPopup(`<strong>${word}</strong><br>${translated}<br>${common}`, e.pageX + 10, e.pageY);
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.classList.contains("word")) {
+        popup.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
